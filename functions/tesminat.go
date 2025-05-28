@@ -127,7 +127,7 @@ var skorKategori = map[string]int{
 	"R": 0, "I": 0, "A": 0, "S": 0, "E": 0, "C": 0,
 }
 
-//Buat ambil soal acak dari semua soal 
+//Buat ambil soal acak dari semua soal  
 func ambilRandomSoal(soalList []Soal, jumlah int) []Soal {
 	rand.Seed(time.Now().UnixNano())
 	shuffled := make([]Soal, len(soalList))
@@ -152,6 +152,12 @@ func TesMinatKeahlian() {
 	fmt.Println("  C = Tidak Sama Sekali")
 	fmt.Println("--------------------------------------------")
 
+	// Input nama user
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Masukkan nama Anda: ")
+	inputNama, _ := reader.ReadString('\n')
+	namaUser = strings.TrimSpace(inputNama)
+
 	mapSoal := map[string][]Soal{
 		"R": {}, "I": {}, "A": {}, "S": {}, "E": {}, "C": {},
 	}
@@ -159,21 +165,17 @@ func TesMinatKeahlian() {
 		mapSoal[soal.Kategori] = append(mapSoal[soal.Kategori], soal)
 	}
 
-	//Buat ngambil 5 soal dari tiap kategori
 	var soalTes []Soal
 	for _, kode := range []string{"R", "I", "A", "S", "E", "C"} {
 		soalTes = append(soalTes, ambilRandomSoal(mapSoal[kode], 5)...)
 	}
 
-	//Buat shuffle soal yang diambil dari tiap kategori
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(soalTes), func(i, j int) {
 		soalTes[i], soalTes[j] = soalTes[j], soalTes[i]
 	})
 
-	//Buat mapping skor awal tiap kategori
 	skorKategori = map[string]int{"R": 0, "I": 0, "A": 0, "S": 0, "E": 0, "C": 0}
-	reader := bufio.NewReader(os.Stdin)
 
 	for i, soal := range soalTes {
 		fmt.Printf("%d. %s\n", i+1, soal.Pertanyaan)
@@ -193,12 +195,12 @@ func TesMinatKeahlian() {
 		}
 		fmt.Println()
 	}
-
 	tampilkanHasil()
 }
 
 //Hasil tesnya disini
 var hasilDominan string
+var namaUser string
 func tampilkanHasil() {
 	fmt.Println("📊 HASIL TES MINAT & KEAHLIAN")
 	fmt.Println("--------------------------------")
@@ -223,7 +225,7 @@ func tampilkanHasil() {
 	fmt.Println("💼 Rekomendasi Karier:")
 	fmt.Println(saranKarierString(dominan))
 
-	// Tanya simpan hasil
+	//tanya simpan hasil disini
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("\nApakah Anda ingin menyimpan hasil tes ini? (Y/N): ")
 	pilihan, _ := reader.ReadString('\n')
@@ -250,8 +252,6 @@ func simpanHasilTes() {
 	ext := ".txt"
 	idx := 1
 	var filename string
-
-	// buat cari nama file hasiltesX.txt yang belum dipake
 	for {
 		filename = filepath.Join(folder, fmt.Sprintf("%s%d%s", base, idx, ext))
 		if _, err := os.Stat(filename); os.IsNotExist(err) {
@@ -270,24 +270,17 @@ func simpanHasilTes() {
 	now := time.Now().Format("2006-01-02 15:04:05")
 
 	namaKategori := map[string]string{
-		"R": "Realistic",
-		"I": "Investigative",
-		"A": "Artistic",
-		"S": "Social",
-		"E": "Enterprising",
-		"C": "Conventional",
+		"R": "Realistic", "I": "Investigative", "A": "Artistic",
+		"S": "Social", "E": "Enterprising", "C": "Conventional",
 	}
 
-	// Format sesuai kebutuhan cetakPDF
-	fmt.Fprintf(file, "Tanggal Tes: %s\n\n", now)
+	fmt.Fprintf(file, "Tanggal Tes : %s\n", now)
+	fmt.Fprintf(file, "Nama Peserta: %s\n\n", namaUser)
+
 	fmt.Fprintln(file, "Skor Kategori RIASEC:")
 	for _, kode := range []string{"R", "I", "A", "S", "E", "C"} {
-		skor := skorKategori[kode]
-		nama := namaKategori[kode]
-		fmt.Fprintf(file, "%s : %d\n", nama, skor)
+		fmt.Fprintf(file, "%s : %d\n", namaKategori[kode], skorKategori[kode])
 	}
-
-	// Biar hasilDominan ke nama lengkap (misal "R" -> "Realistic")
 	dominanLengkap := namaKategori[hasilDominan]
 
 	file.WriteString("\nMinat Dominan: " + dominanLengkap + "\n\n")
