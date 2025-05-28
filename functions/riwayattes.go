@@ -114,7 +114,6 @@ func pilihFileDanCetakPDF(files []string) {
 		return
 	}
 
-	// Buat folder pdf kalok belum ada
 	pdfFolder := filepath.Join(folder, "pdf")
 	if _, err := os.Stat(pdfFolder); os.IsNotExist(err) {
 		err = os.MkdirAll(pdfFolder, os.ModePerm)
@@ -124,16 +123,17 @@ func pilihFileDanCetakPDF(files []string) {
 		}
 	}
 
-	// Persiapan data
-	lines := strings.Split(string(content), "\n")
-	var tanggal, dominan string
-	var skor map[string]string = make(map[string]string)
-	var rekomendasi []string
-
 	// Parsing isi file
+	lines := strings.Split(string(content), "\n")
+	var tanggal, dominan, nama string
+	skor := make(map[string]string)
+	var rekomendasi []string
 	section := ""
+
 	for _, line := range lines {
-		if strings.HasPrefix(line, "Tanggal Tes:") {
+		if strings.HasPrefix(line, "Nama:") {
+			nama = strings.TrimSpace(strings.TrimPrefix(line, "Nama:"))
+		} else if strings.HasPrefix(line, "Tanggal Tes:") {
 			tanggal = strings.TrimSpace(strings.TrimPrefix(line, "Tanggal Tes:"))
 		} else if strings.HasPrefix(line, "Minat Dominan:") {
 			dominan = strings.TrimSpace(strings.TrimPrefix(line, "Minat Dominan:"))
@@ -148,7 +148,7 @@ func pilihFileDanCetakPDF(files []string) {
 		}
 	}
 
-	// Mapping emoji per kategori
+	// Ikon RIASEC
 	ikon := map[string]string{
 		"Realistic":     "🔧",
 		"Investigative": "🔬",
@@ -158,56 +158,71 @@ func pilihFileDanCetakPDF(files []string) {
 		"Conventional":  "📊",
 	}
 
-	// Buat PDF
+	// PDF
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.SetTitle("Hasil Tes Minat & Keahlian", false)
 	pdf.AddPage()
 
+	// Warna
+	softGray := []int{245, 245, 245}
+
 	// Header
-	pdf.SetFont("Arial", "B", 20)
-	pdf.Cell(0, 10, "🧠 Hasil Tes Minat & Keahlian")
+	pdf.SetFillColor(0, 102, 204)
+	pdf.SetTextColor(255, 255, 255)
+	pdf.SetFont("Arial", "B", 22)
+	pdf.CellFormat(0, 15, "🧠 Hasil Tes Minat & Keahlian", "0", 1, "C", true, 0, "")
+
+	pdf.Ln(5)
+
+	// Nama & Tanggal
+	pdf.SetTextColor(0, 0, 0)
+	pdf.SetFont("Arial", "", 12)
+	pdf.Cell(0, 8, "👤 Nama: "+nama)
+	pdf.Ln(6)
+	pdf.Cell(0, 8, "📅 Tanggal Tes: "+tanggal)
 	pdf.Ln(12)
 
-	// Tanggal
-	pdf.SetFont("Arial", "", 12)
-	pdf.Cell(0, 8, "📅 Tanggal Tes: "+tanggal)
-	pdf.Ln(10)
-
-	// Skor
+	// Section: Skor
 	pdf.SetFont("Arial", "B", 14)
 	pdf.Cell(0, 10, "📊 Skor RIASEC")
 	pdf.Ln(10)
 
 	pdf.SetFont("Arial", "", 12)
+	pdf.SetFillColor(softGray[0], softGray[1], softGray[2])
 	for kategori, nilai := range skor {
 		icon := ikon[kategori]
-		pdf.Cell(0, 8, fmt.Sprintf("%s %-13s : %s", icon, kategori, nilai))
-		pdf.Ln(8)
+		pdf.CellFormat(0, 8, fmt.Sprintf("%s %-13s : %s", icon, kategori, nilai), "", 1, "", true, 0, "")
 	}
-
-	// Dominan
-	pdf.Ln(4)
-	pdf.SetFont("Arial", "B", 14)
-	pdf.Cell(0, 10, "🎯 Minat Dominan Anda")
 	pdf.Ln(10)
 
-	pdf.SetFont("Arial", "", 12)
+	// Section: Dominan
+	pdf.SetFont("Arial", "B", 14)
+	pdf.Cell(0, 10, "🎯 Minat Dominan")
+	pdf.Ln(8)
+
+	pdf.SetFont("Arial", "I", 12)
 	dominanEmoji := ikon[dominan]
 	pdf.MultiCell(0, 8, fmt.Sprintf("%s %s", dominanEmoji, dominan), "", "", false)
+	pdf.Ln(10)
 
-	// Rekomendasi Karier
-	pdf.Ln(4)
+	// Section: Rekomendasi
 	pdf.SetFont("Arial", "B", 14)
 	pdf.Cell(0, 10, "💼 Rekomendasi Karier")
-	pdf.Ln(10)
+	pdf.Ln(8)
 
 	pdf.SetFont("Arial", "", 12)
 	for _, job := range rekomendasi {
 		pdf.Cell(0, 8, "• "+job)
-		pdf.Ln(8)
+		pdf.Ln(6)
 	}
 
-	// Simpan ke memory/pdf
+	// Footer
+	pdf.Ln(15)
+	pdf.SetFont("Arial", "I", 10)
+	pdf.SetTextColor(100, 100, 100)
+	pdf.Cell(0, 10, "Dicetak otomatis oleh sistem BelajarKuy")
+
+	// Simpan
 	output := strings.Replace(files[idx-1], ".txt", ".pdf", 1)
 	outputPath := filepath.Join(pdfFolder, output)
 	err = pdf.OutputFileAndClose(outputPath)
