@@ -267,23 +267,27 @@ func simpanHasilTes() {
 	}
 	defer file.Close()
 
-	now := time.Now().Format("2006-01-02 15:04:05")
+	now := time.Now().Format("2006-01-02")
 
 	namaKategori := map[string]string{
 		"R": "Realistic", "I": "Investigative", "A": "Artistic",
 		"S": "Social", "E": "Enterprising", "C": "Conventional",
 	}
 
-	fmt.Fprintf(file, "Tanggal Tes : %s\n", now)
-	fmt.Fprintf(file, "Nama Peserta: %s\n\n", namaUser)
+	// Tulis nama dan tanggal terlebih dahulu
+	fmt.Fprintf(file, "Nama: %s\n", namaUser)
+	fmt.Fprintf(file, "Tanggal Tes: %s\n\n", now)
 
-	fmt.Fprintln(file, "Skor Kategori RIASEC:")
+	// Tulis skor kategori sesuai urutan dan format yang diminta
 	for _, kode := range []string{"R", "I", "A", "S", "E", "C"} {
-		fmt.Fprintf(file, "%s : %d\n", namaKategori[kode], skorKategori[kode])
+		fmt.Fprintf(file, "%s: %d\n", namaKategori[kode], skorKategori[kode])
 	}
-	dominanLengkap := namaKategori[hasilDominan]
 
+	// Minat dominan
+	dominanLengkap := namaKategori[hasilDominan]
 	file.WriteString("\nMinat Dominan: " + dominanLengkap + "\n\n")
+
+	// Rekomen karir
 	file.WriteString("Rekomendasi Karier:\n")
 	for _, saran := range strings.Split(saranKarierString(hasilDominan), "\n") {
 		file.WriteString(saran + "\n")
