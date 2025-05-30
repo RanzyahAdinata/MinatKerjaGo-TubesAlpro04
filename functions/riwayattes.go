@@ -253,8 +253,19 @@ func hapusSemua() {
 		fmt.Println("📭 Tidak ada file hasil tes.")
 		return
 	}
-	for _, file := range files {
-		os.Remove(filepath.Join(folder, file))
+	var gagal int
+	for _, label := range files {
+		namaFile := strings.Split(label, " | ")[0]
+		err := os.Remove(filepath.Join(folder, namaFile))
+		if err != nil {
+			fmt.Println("❌ Gagal menghapus:", namaFile, "-", err)
+			gagal++
+		}
 	}
-	fmt.Println("🗑️ Semua riwayat tes berhasil dihapus.")
+
+	if gagal == 0 {
+		fmt.Println("🗑️ Semua riwayat tes berhasil dihapus.")
+	} else {
+		fmt.Printf("⚠️ %d file gagal dihapus.\n", gagal)
+	}
 }
