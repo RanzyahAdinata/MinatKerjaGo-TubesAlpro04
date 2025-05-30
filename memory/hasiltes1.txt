@@ -1,0 +1,15 @@
+Nama: Edward
+Tanggal Tes: 2025-05-30
+
+Realistic: 0
+Investigative: 2
+Artistic: 0
+Social: 0
+Enterprising: 0
+Conventional: 0
+
+Minat Dominan: Investigative
+
+Rekomendasi Karier:
+- Ilmuwan, Data Analyst, Peneliti
+
