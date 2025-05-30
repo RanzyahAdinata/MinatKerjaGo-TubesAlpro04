@@ -19,8 +19,8 @@ func RiwayatHasilTes() {
 		}
 
 		fmt.Println("\n📁 DAFTAR HASIL TES")
-		for i, file := range files {
-			fmt.Printf("%d. %s\n", i+1, file)
+		for i, label := range files {
+			fmt.Printf("%d. %s\n", i+1, label)
 		}
 
 		fmt.Println("\nPilih aksi:")
@@ -33,13 +33,19 @@ func RiwayatHasilTes() {
 
 		fmt.Scanln(&opsi)
 
+		// Extract nama file asli dari label
+		realFiles := make([]string, len(files))
+		for i, label := range files {
+			realFiles[i] = strings.Split(label, " | ")[0]
+		}
+
 		switch opsi {
 		case "1":
-			pilihFileDanTampilkan(files)
+			pilihFileDanTampilkan(realFiles)
 		case "2":
-			pilihFileDanCetakPDF(files)
+			pilihFileDanCetakPDF(realFiles)
 		case "3":
-			pilihFileDanHapus(files)
+			pilihFileDanHapus(realFiles)
 		case "4":
 			hapusSemua()
 		case "5":
@@ -53,10 +59,31 @@ func RiwayatHasilTes() {
 func getDaftarHasilTes() []string {
 	files, _ := filepath.Glob(filepath.Join(folder, "hasiltes*.txt"))
 	sort.Strings(files)
-	for i := range files {
-		files[i] = filepath.Base(files[i])
+
+	var hasil []string
+	for _, path := range files {
+		namaFile := filepath.Base(path)
+		isidata, err := os.ReadFile(path)
+		if err != nil {
+			hasil = append(hasil, namaFile+" (gagal baca)")
+			continue
+		}
+
+		var nama, tanggal string
+		lines := strings.Split(string(isidata), "\n")
+		for _, line := range lines {
+			if strings.HasPrefix(line, "Nama:") {
+				nama = strings.TrimSpace(strings.TrimPrefix(line, "Nama:"))
+			}
+			if strings.HasPrefix(line, "Tanggal Tes:") {
+				tanggal = strings.TrimSpace(strings.TrimPrefix(line, "Tanggal Tes:"))
+			}
+		}
+
+		label := fmt.Sprintf("%s | %s | %s", namaFile, nama, tanggal)
+		hasil = append(hasil, label)
 	}
-	return files
+	return hasil
 }
 
 func pilihFileDanTampilkan(files []string) {
@@ -123,7 +150,6 @@ func pilihFileDanCetakPDF(files []string) {
 		}
 	}
 
-	// Parsing isi file
 	lines := strings.Split(string(content), "\n")
 	var tanggal, dominan, nama string
 	skor := make(map[string]string)
@@ -131,6 +157,7 @@ func pilihFileDanCetakPDF(files []string) {
 	section := ""
 
 	for _, line := range lines {
+		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "Nama:") {
 			nama = strings.TrimSpace(strings.TrimPrefix(line, "Nama:"))
 		} else if strings.HasPrefix(line, "Tanggal Tes:") {
@@ -142,72 +169,61 @@ func pilihFileDanCetakPDF(files []string) {
 			section = "rekomendasi"
 		} else if strings.Contains(line, ":") && section != "rekomendasi" {
 			parts := strings.SplitN(line, ":", 2)
-			skor[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
+			kunci := strings.TrimSpace(parts[0])
+			nilai := strings.TrimSpace(parts[1])
+			skor[kunci] = nilai
 		} else if section == "rekomendasi" && strings.TrimSpace(line) != "" {
 			rekomendasi = append(rekomendasi, line)
 		}
 	}
 
-	// Ikon RIASEC
-	ikon := map[string]string{
-		"Realistic":     "🔧",
-		"Investigative": "🔬",
-		"Artistic":      "🎨",
-		"Social":        "🤝",
-		"Enterprising":  "💼",
-		"Conventional":  "📊",
-	}
-
-	// PDF
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.SetTitle("Hasil Tes Minat & Keahlian", false)
 	pdf.AddPage()
 
-	// Warna
 	softGray := []int{245, 245, 245}
 
 	// Header
 	pdf.SetFillColor(0, 102, 204)
 	pdf.SetTextColor(255, 255, 255)
 	pdf.SetFont("Arial", "B", 22)
-	pdf.CellFormat(0, 15, "🧠 Hasil Tes Minat & Keahlian", "0", 1, "C", true, 0, "")
-
+	pdf.CellFormat(0, 15, "Hasil Tes Minat & Keahlian", "0", 1, "C", true, 0, "")
 	pdf.Ln(5)
 
-	// Nama & Tanggal
+	// Nama dan Tanggal
 	pdf.SetTextColor(0, 0, 0)
 	pdf.SetFont("Arial", "", 12)
-	pdf.Cell(0, 8, "👤 Nama: "+nama)
+	pdf.Cell(0, 8, "Nama: "+nama)
 	pdf.Ln(6)
-	pdf.Cell(0, 8, "📅 Tanggal Tes: "+tanggal)
+	pdf.Cell(0, 8, "Tanggal Tes: "+tanggal)
 	pdf.Ln(12)
 
-	// Section: Skor
+	// Skor RIASEC
 	pdf.SetFont("Arial", "B", 14)
-	pdf.Cell(0, 10, "📊 Skor RIASEC")
+	pdf.Cell(0, 10, "Skor RIASEC")
 	pdf.Ln(10)
 
 	pdf.SetFont("Arial", "", 12)
 	pdf.SetFillColor(softGray[0], softGray[1], softGray[2])
-	for kategori, nilai := range skor {
-		icon := ikon[kategori]
-		pdf.CellFormat(0, 8, fmt.Sprintf("%s %-13s : %s", icon, kategori, nilai), "", 1, "", true, 0, "")
+	for _, kategori := range []string{"Realistic", "Investigative", "Artistic", "Social", "Enterprising", "Conventional"} {
+		if nilai, ok := skor[kategori]; ok {
+			pdf.CellFormat(0, 8, fmt.Sprintf("%-13s : %s", kategori, nilai), "", 1, "", true, 0, "")
+		}
 	}
 	pdf.Ln(10)
 
-	// Section: Dominan
+	// Dominan
 	pdf.SetFont("Arial", "B", 14)
-	pdf.Cell(0, 10, "🎯 Minat Dominan")
+	pdf.Cell(0, 10, "Minat Dominan")
 	pdf.Ln(8)
 
 	pdf.SetFont("Arial", "I", 12)
-	dominanEmoji := ikon[dominan]
-	pdf.MultiCell(0, 8, fmt.Sprintf("%s %s", dominanEmoji, dominan), "", "", false)
+	pdf.MultiCell(0, 8, dominan, "", "", false)
 	pdf.Ln(10)
 
-	// Section: Rekomendasi
+	// Rekomendasi
 	pdf.SetFont("Arial", "B", 14)
-	pdf.Cell(0, 10, "💼 Rekomendasi Karier")
+	pdf.Cell(0, 10, "Rekomendasi Karier")
 	pdf.Ln(8)
 
 	pdf.SetFont("Arial", "", 12)
@@ -216,13 +232,11 @@ func pilihFileDanCetakPDF(files []string) {
 		pdf.Ln(6)
 	}
 
-	// Footer
 	pdf.Ln(15)
 	pdf.SetFont("Arial", "I", 10)
 	pdf.SetTextColor(100, 100, 100)
-	pdf.Cell(0, 10, "Dicetak otomatis oleh sistem BelajarKuy")
+	pdf.Cell(0, 10, "Dicetak otomatis oleh sistem MinatKerjaGo")
 
-	// Simpan
 	output := strings.Replace(files[idx-1], ".txt", ".pdf", 1)
 	outputPath := filepath.Join(pdfFolder, output)
 	err = pdf.OutputFileAndClose(outputPath)
