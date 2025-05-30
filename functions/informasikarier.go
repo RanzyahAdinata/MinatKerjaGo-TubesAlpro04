@@ -61,7 +61,7 @@ func CariKarier() {
 	var ditemukan bool = false
 
 	fmt.Print("Masukkan nama kategori (misal: Social): ")
-	fmt.Scanln(&cari)
+	fmt.Scan(&cari)
 
 	for i := 0; i < jumlahKarier; i++ {
 		if strings.EqualFold(dataKarier[i].Nama, cari) {
