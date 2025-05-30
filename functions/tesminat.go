@@ -155,8 +155,10 @@ func TesMinatKeahlian() {
 	// Input nama user
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Masukkan nama Anda: ")
+	reader.ReadString('\n')
 	inputNama, _ := reader.ReadString('\n')
 	namaUser = strings.TrimSpace(inputNama)
+
 
 	mapSoal := map[string][]Soal{
 		"R": {}, "I": {}, "A": {}, "S": {}, "E": {}, "C": {},
